@@ -1,0 +1,203 @@
+# CodeRabbit Configuration for MoreMoreMusic Infrastructure Repository
+
+language: ko-KR
+
+early_access: true
+enable_free_tier: true
+
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai 요약"
+  auto_title_placeholder: "@coderabbitai"
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/swagger.json"
+    - "!**/.terraform/**"
+    - "!**/terraform.tfstate*"
+    - "!**/node_modules/**"
+    - "!**/*.log"
+    - "!**/*.tmp"
+    - "!**/secrets.yaml"
+  path_instructions:
+    - path: "k8s/**/*.yaml"
+      instructions: >
+        🔒 Review K8s manifests focusing on:
+
+        ## 🛡️ Security
+        - Verify securityContext (runAsNonRoot, readOnlyRootFilesystem)
+        - Check no root execution
+        - Validate no hardcoded secrets
+        - Ensure proper Secret/ConfigMap usage
+        - Verify RBAC follows least privilege
+
+        ## ⚖️ Resources
+        - Check requests/limits on all containers
+        - Validate resource allocation matches requirements
+        - Review HPA settings
+        - Verify PVC configuration
+
+        ## 🔄 High Availability
+        - Ensure minimum 2 replicas
+        - Check anti-affinity rules
+        - Validate liveness/readiness probes
+        - Review deployment strategy
+
+        ## 🌐 Networking
+        - Verify Service types and ports
+        - Check Ingress configuration (TLS, routing)
+        - Validate NetworkPolicy if needed
+
+        ## 🏷️ Naming & Labels
+        - Check consistent naming conventions
+        - Verify label/selector matching
+        - Validate namespace settings
+
+        🚨🚨🚨 For security issues, escalate severity and provide specific Korean recommendations.
+
+    - path: "k8s/**/*.yml"
+      instructions: >
+        🔒 Review K8s manifests focusing on:
+
+        ## 🛡️ Security
+        - Verify securityContext (runAsNonRoot, readOnlyRootFilesystem)
+        - Check no root execution
+        - Validate no hardcoded secrets
+        - Ensure proper Secret/ConfigMap usage
+        - Verify RBAC follows least privilege
+
+        ## ⚖️ Resources
+        - Check requests/limits on all containers
+        - Validate resource allocation matches requirements
+        - Review HPA settings
+        - Verify PVC configuration
+
+        🚨🚨🚨 For security issues, escalate severity and provide specific Korean recommendations.
+
+    - path: "terraform/**/*.tf"
+      instructions: >
+        🏗️ Review Terraform configurations focusing on:
+
+        ## 🔒 Security Best Practices
+        - Check for hardcoded secrets/sensitive data
+        - Verify encryption settings for required resources
+        - Ensure IAM policies follow least privilege
+        - Validate no unnecessary public access
+
+        ## 📋 Resource Management
+        - Check consistent tagging strategy
+        - Verify clear naming conventions
+        - Review depends_on relationships
+        - Validate lifecycle rules
+
+        ## 🗂️ State Management
+        - Check backend configuration
+        - Verify state locking setup
+        - Validate version constraints
+
+        🚨🚨🚨 For security vulnerabilities, escalate severity and provide specific Korean recommendations.
+
+    - path: "**/*.tf"
+      instructions: >
+        🏗️ Review Terraform configurations focusing on:
+
+        ## 🔒 Security Best Practices
+        - Check for hardcoded secrets/sensitive data
+        - Verify encryption settings for required resources
+        - Ensure IAM policies follow least privilege
+
+        ## 📋 Resource Management
+        - Check consistent tagging strategy
+        - Verify clear naming conventions
+
+        🚨🚨🚨 For security vulnerabilities, escalate severity and provide specific Korean recommendations.
+
+    - path: "**/README.md"
+      instructions: >
+        📚 Review documentation focusing on:
+
+        ## 📖 Quality
+        - Check clarity and readability
+        - Verify code examples are accurate and executable
+        - Validate links work properly
+
+        ## ✅ Completeness
+        - Ensure all required sections are included
+        - Check installation/setup guides are complete
+        - Verify troubleshooting information is sufficient
+
+        Provide specific Korean recommendations for improvements.
+
+    - path: "**/*.md"
+      instructions: >
+        📚 Review documentation focusing on:
+
+        ## 📖 Quality
+        - Check clarity and readability
+        - Verify code examples are accurate and executable
+        - Check markdown syntax is correct
+
+        ## 🔗 Structure & Format
+        - Verify logical document structure
+        - Check table of contents and internal links
+
+        Provide specific Korean recommendations for improvements.
+
+  abort_on_close: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    ignore_title_keywords: []
+    labels: []
+    drafts: false
+    base_branches: []
+  tools:
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+    languagetool:
+      enabled: true
+      disabled_rules:
+        - EN_UNPAIRED_BRACKETS
+        - EN_UNPAIRED_QUOTES
+      disabled_categories:
+        - TYPOS
+        - TYPOGRAPHY
+        - CASING
+      enabled_only: false
+      level: default
+      enabled_rules: []
+      enabled_categories: []
+    hadolint:
+      enabled: true
+    yamllint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    checkov:
+      enabled: true
+    ast-grep:
+      packages: []
+      rule_dirs: []
+      util_dirs: []
+      essential_rules: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  jira:
+    project_keys: []
+  linear:
+    team_keys: []
