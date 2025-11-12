@@ -18,11 +18,16 @@ jobs:
             const { owner, repo, number } = context.issue;
             const creator = context.payload.pull_request.user.login;
 
-            await github.rest.issues.addAssignees({
-              owner,
-              repo,
-              issue_number: number,
-              assignees: [creator]
-            });
+            try {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: number,
+                assignees: [creator]
+              });
 
-            console.log(`Assigned PR #${number} to creator: ${creator}`);
+              console.log(`Assigned PR #${number} to creator: ${creator}`);
+            } catch (error) {
+              console.error(`Failed to assign PR creator: ${error.message}`);
+              process.exit(1);
+            }
