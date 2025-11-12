@@ -79,7 +79,7 @@ kubectl port-forward svc/grafana 3000:80 # Access Grafana dashboard
 
 ## File Structure Conventions
 
-```
+```plaintext
 /terraform/                    # Infrastructure as Code
   /modules/                    # Reusable Terraform modules
     /eks-cluster/              # Kubernetes cluster module
