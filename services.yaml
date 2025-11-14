@@ -1,0 +1,30 @@
+# Pod Disruption Budget for MSA Services
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-service-pdb
+  namespace: moremoremusic-msa
+  labels:
+    app.kubernetes.io/name: user-service
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: moremoremusic
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: music-service-pdb
+  namespace: moremoremusic-msa
+  labels:
+    app.kubernetes.io/name: music-service
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: moremoremusic
+spec:
+  maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: music-service

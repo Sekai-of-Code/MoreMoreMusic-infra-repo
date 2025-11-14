@@ -1,0 +1,304 @@
+# MoreMoreMusic Development Values
+# Simplified configuration for development environment
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: "standard"
+  timezone: "Asia/Seoul"
+  environment: "development"
+  monitoring:
+    enabled: false
+  security:
+    enabled: true
+    networkPolicies: true
+    podSecurityStandards: true
+
+# Application configuration
+app:
+  name: moremoremusic
+  namespace: moremoremusic-dev
+  domain: localhost
+  environment: development
+  version: "1.0.0-dev"
+
+# Enhanced labeling following Kubernetes standards
+labels:
+  common:
+    app.kubernetes.io/part-of: moremoremusic
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/version: "1.0.0-dev"
+    environment: development
+
+# Frontend service (simplified for dev)
+frontend:
+  enabled: true
+  name: frontend
+  image:
+    repository: nginx
+    tag: "1.25-alpine"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  autoscaling:
+    enabled: false
+  
+  # Development deployment strategy
+  strategy:
+    type: Recreate
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+
+# User service (development configuration)
+userService:
+  enabled: true
+  name: user-service
+  image:
+    repository: node
+    tag: "18-alpine"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "300m"
+  
+  # Development deployment strategy
+  strategy:
+    type: Recreate
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  
+  # Health checks (relaxed for dev)
+  probes:
+    readiness:
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+  
+  env:
+    SERVICE_NAME: "user-service-dev"
+    KAFKA_BROKERS: "kafka-service:9092"
+    NODE_ENV: "development"
+
+# Music service (development configuration)
+musicService:
+  enabled: true
+  name: music-service
+  image:
+    repository: node
+    tag: "18-alpine"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "300m"
+  
+  # Development deployment strategy
+  strategy:
+    type: Recreate
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  
+  # Health checks (relaxed for dev)
+  probes:
+    readiness:
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+  
+  env:
+    SERVICE_NAME: "music-service-dev"
+    KAFKA_BROKERS: "kafka-service:9092"
+    NODE_ENV: "development"
+
+# PostgreSQL configuration (lightweight for dev)
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "devpassword"
+    username: moremoremusic
+    password: "devpassword"
+    database: moremoremusic_dev
+  primary:
+    persistence:
+      enabled: false  # Use emptyDir for development
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "300m"
+
+# Redis configuration (lightweight for dev)
+redis:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    enabled: false  # Disable auth for development
+  master:
+    persistence:
+      enabled: false  # Use emptyDir for development
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+# Kafka configuration (simplified for development)
+kafka:
+  enabled: true
+  
+  # KRaft mode configuration
+  kraft:
+    enabled: true
+    clusterId: "4L6g3nShT-eMCtK--X86sw"
+  
+  # Single broker for development
+  controller:
+    replicaCount: 0
+  
+  broker:
+    replicaCount: 1
+    persistence:
+      enabled: false  # Use emptyDir for development
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "200m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+  
+  # ZooKeeper disabled (using KRaft)
+  zookeeper:
+    enabled: false
+  
+  # Development optimizations
+  config:
+    numNetworkThreads: 3
+    numIoThreads: 2
+    socketSendBufferBytes: 102400
+    socketReceiveBufferBytes: 102400
+    socketRequestMaxBytes: 104857600
+    numPartitions: 1
+    defaultReplicationFactor: 1
+    offsetsTopicReplicationFactor: 1
+    transactionStateLogReplicationFactor: 1
+    transactionStateLogMinIsr: 1
+    logRetentionHours: 24
+    logSegmentBytes: 1073741824
+    logRetentionCheckIntervalMs: 300000
+    autoCreateTopicsEnable: true
+    deleteTopicEnable: true
+
+# Ingress disabled for development
+ingress:
+  enabled: false
+
+# Monitoring disabled for development
+monitoring:
+  enabled: false
+
+# Network policies (minimal for dev)
+networkPolicy:
+  enabled: true
+  policyTypes:
+  - Ingress
+
+# Security context (same as production)
+securityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+# Pod disruption budgets disabled for dev
+podDisruptionBudget:
+  enabled: false
+
+# Resource limits (relaxed for development)
+resources:
+  limits:
+    cpu: "1"
+    memory: "2Gi"
+  requests:
+    cpu: "500m"
+    memory: "1Gi"

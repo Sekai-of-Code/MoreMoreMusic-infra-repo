@@ -1,0 +1,186 @@
+{{- if .Values.userService.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.userService.name }}
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+    app.kubernetes.io/version: {{ .Values.userService.image.tag }}
+spec:
+  replicas: {{ .Values.userService.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.userService.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.userService.name }}
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: {{ .Values.app.name }}
+        app.kubernetes.io/version: {{ .Values.userService.image.tag }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.userService.name }}
+        image: "{{ .Values.userService.image.repository }}:{{ .Values.userService.image.tag }}"
+        imagePullPolicy: {{ .Values.userService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.userService.service.targetPort }}
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.userService.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.userService.env.NODE_ENV | quote }}
+        - name: PORT
+          value: {{ .Values.userService.env.PORT | quote }}
+        - name: SERVICE_NAME
+          value: {{ .Values.userService.env.SERVICE_NAME | quote }}
+        - name: DATABASE_URL
+          value: "postgresql://$(DATABASE_USER):$(DATABASE_PASSWORD)@$(DATABASE_HOST):$(DATABASE_PORT)/$(DATABASE_NAME)"
+        - name: DATABASE_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: database-host
+        - name: DATABASE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: database-port
+        - name: DATABASE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: database-name
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secrets
+              key: username
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secrets
+              key: password
+        - name: REDIS_URL
+          value: "redis://:$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)"
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: redis-host
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: redis-port
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secrets
+              key: password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secrets
+              key: jwt-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.userService.name }}
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+spec:
+  type: {{ .Values.userService.service.type }}
+  ports:
+  - port: {{ .Values.userService.service.port }}
+    targetPort: http
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: metrics
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: {{ .Values.userService.name }}
+
+{{- if .Values.userService.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.userService.name }}-hpa
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.userService.name }}
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: {{ .Values.app.name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.userService.name }}
+  minReplicas: {{ .Values.userService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.userService.autoscaling.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.userService.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+
+{{- if .Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Values.userService.name }}-pdb
+  namespace: {{ .Values.app.namespace }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.userService.name }}
+{{- end }}
+{{- end }}

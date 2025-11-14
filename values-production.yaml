@@ -1,0 +1,414 @@
+# MoreMoreMusic Production Values
+# Enhanced Helm Chart Values with Production Best Practices
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: "standard"
+  timezone: "Asia/Seoul"
+  environment: "production"
+  monitoring:
+    enabled: true
+  security:
+    enabled: true
+    networkPolicies: true
+    podSecurityStandards: true
+
+# Application configuration with enhanced metadata
+app:
+  name: moremoremusic
+  namespace: moremoremusic-production
+  domain: moremoremusic.com
+  environment: production
+  version: "1.0.0"
+  
+# Enhanced labeling following Kubernetes standards
+labels:
+  common:
+    app.kubernetes.io/part-of: moremoremusic
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/version: "1.0.0"
+    environment: production
+
+# Frontend service configuration with production settings
+frontend:
+  enabled: true
+  name: frontend
+  image:
+    repository: moremoremusic/frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 3
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  # Production deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  
+  env:
+    REACT_APP_API_URL: "https://api.moremoremusic.com"
+    NODE_ENV: "production"
+
+# User service configuration with enhanced reliability
+userService:
+  enabled: true
+  name: user-service
+  image:
+    repository: moremoremusic/user-service
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 2
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # Enhanced deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 0
+  
+  # Anti-affinity for high availability
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - user-service
+          topologyKey: kubernetes.io/hostname
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  
+  # Health checks
+  probes:
+    readiness:
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 40
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+  
+  env:
+    SERVICE_NAME: "user-service"
+    KAFKA_BROKERS: "kafka-service:9092"
+    NODE_ENV: "production"
+
+# Music service configuration
+musicService:
+  enabled: true
+  name: music-service
+  image:
+    repository: moremoremusic/music-service
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 2
+  
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  # Enhanced deployment strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  
+  # Pod Disruption Budget
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 0
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  
+  # Health checks
+  probes:
+    readiness:
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 40
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+  
+  env:
+    SERVICE_NAME: "music-service"
+    KAFKA_BROKERS: "kafka-service:9092"
+    NODE_ENV: "production"
+
+# PostgreSQL configuration (production-ready)
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: "15.4.0-debian-11-r0"
+    pullPolicy: IfNotPresent
+  auth:
+    enablePostgresUser: true
+    postgresPassword: "supersecurepassword"
+    username: moremoremusic
+    password: "securepassword"
+    database: moremoremusic
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
+
+# Redis configuration (production-ready)
+redis:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/redis
+    tag: "7.0.12-debian-11-r12"
+    pullPolicy: IfNotPresent
+  auth:
+    enabled: true
+    password: "redispassword"
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+# Kafka configuration (enhanced production setup)
+kafka:
+  enabled: true
+  
+  # KRaft mode configuration
+  kraft:
+    enabled: true
+    clusterId: "4L6g3nShT-eMCtK--X86sw"
+  
+  # Controller configuration (KRaft mode)
+  controller:
+    replicaCount: 1
+    
+  # Broker configuration
+  broker:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "fast-ssd"
+    resources:
+      requests:
+        memory: "1.5Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+  
+  # ZooKeeper disabled (using KRaft)
+  zookeeper:
+    enabled: false
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      client: 9092
+      controller: 9093
+  
+  # Production optimizations
+  config:
+    numNetworkThreads: 8
+    numIoThreads: 8
+    socketSendBufferBytes: 102400
+    socketReceiveBufferBytes: 102400
+    socketRequestMaxBytes: 104857600
+    numPartitions: 3
+    defaultReplicationFactor: 1
+    offsetsTopicReplicationFactor: 1
+    transactionStateLogReplicationFactor: 1
+    transactionStateLogMinIsr: 1
+    logRetentionHours: 72
+    logSegmentBytes: 268435456
+    logRetentionCheckIntervalMs: 300000
+    autoCreateTopicsEnable: true
+    deleteTopicEnable: true
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+  - host: moremoremusic.com
+    paths:
+    - path: /
+      pathType: Prefix
+      backend:
+        service:
+          name: frontend
+          port:
+            number: 80
+  - host: api.moremoremusic.com
+    paths:
+    - path: /user
+      pathType: Prefix
+      backend:
+        service:
+          name: user-service
+          port:
+            number: 3000
+    - path: /music
+      pathType: Prefix
+      backend:
+        service:
+          name: music-service
+          port:
+            number: 3001
+  tls:
+  - secretName: moremoremusic-tls
+    hosts:
+    - moremoremusic.com
+    - api.moremoremusic.com
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# Network policies for security
+networkPolicy:
+  enabled: true
+  policyTypes:
+  - Ingress
+  - Egress
+
+# Security context for all pods
+securityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+# Pod disruption budgets
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "1"
+    memory: "2Gi"
