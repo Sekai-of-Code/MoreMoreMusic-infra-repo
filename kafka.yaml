@@ -47,6 +47,19 @@ spec:
         app.kubernetes.io/version: "7.4.0"
     spec:
       serviceAccountName: kafka-service-account
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      initContainers:
+      - name: volume-permissions
+        image: busybox:1.35
+        command: ['sh', '-c', 'chown -R 1000:1000 /var/kafka-logs && chmod -R 755 /var/kafka-logs']
+        volumeMounts:
+        - name: kafka-storage
+          mountPath: /var/kafka-logs
+        securityContext:
+          runAsUser: 0
       containers:
       - name: kafka
         image: confluentinc/cp-kafka:7.4.0
@@ -78,7 +91,7 @@ spec:
           value: "PLAINTEXT"
         # Storage and replication
         - name: KAFKA_LOG_DIRS
-          value: "/tmp/kafka-logs"
+          value: "/var/kafka-logs"
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
@@ -93,26 +106,34 @@ spec:
         - name: KAFKA_DELETE_TOPIC_ENABLE
           value: "true"
         - name: KAFKA_LOG_RETENTION_HOURS
-          value: "24"
-        # JVM options
+          value: "168"  # 7 days for better data retention
+        # JVM options optimized for production
         - name: KAFKA_HEAP_OPTS
-          value: "-Xmx512m -Xms512m"
+          value: "-Xmx768m -Xms768m"
+        - name: KAFKA_JVM_PERFORMANCE_OPTS
+          value: "-server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35"
+        # Monitoring and JMX (disabled for development to avoid port conflicts)
+        - name: KAFKA_OPTS
+          value: "-Dcom.sun.management.jmxremote=false"
+        volumeMounts:
+        - name: kafka-storage
+          mountPath: /var/kafka-logs
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "200m"
+            memory: "768Mi"
+            cpu: "300m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "1.5Gi"
+            cpu: "800m"
         readinessProbe:
           exec:
             command:
             - /bin/bash
             - -c
             - "kafka-broker-api-versions --bootstrap-server localhost:9092"
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+          initialDelaySeconds: 45
+          periodSeconds: 15
+          timeoutSeconds: 10
           failureThreshold: 3
         livenessProbe:
           exec:
@@ -120,7 +141,12 @@ spec:
             - /bin/bash
             - -c
             - "kafka-topics --bootstrap-server localhost:9092 --list"
-          initialDelaySeconds: 60
+          initialDelaySeconds: 90
           periodSeconds: 30
-          timeoutSeconds: 10
+          timeoutSeconds: 15
           failureThreshold: 3
+      volumes:
+      - name: kafka-storage
+        hostPath:
+          path: /tmp/kafka-data
+          type: DirectoryOrCreate
