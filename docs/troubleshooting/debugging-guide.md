@@ -464,7 +464,7 @@ kubectl logs -n moremoremusic-msa kafka-secure-xxxxx | grep -i error
 
 # 특정 시간대 로그
 kubectl logs -n moremoremusic-msa kafka-secure-xxxxx \
-  --since-time=2024-01-15T10:00:00Z | head -n 1000
+  --since-time=2024-01-15T10:00:00Z | grep "2024-01-15T10" | head -n 1000
 ```
 
 #### 애플리케이션 로그 구조화
