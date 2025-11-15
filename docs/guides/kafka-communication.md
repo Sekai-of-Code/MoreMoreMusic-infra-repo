@@ -33,14 +33,14 @@
 
 ### 핵심 용어 정리
 
-| 용어 | 카카오톡 비유 | MoreMoreMusic 예시 |
-|------|--------------|-------------------|
-| **Producer** | 메시지 보내는 사람 | User Service (로그인 알림) |
-| **Consumer** | 메시지 읽는 사람 | Music Service (알림 받음) |
-| **Topic** | 그룹채팅방 | `user-events`, `music-events` |
-| **Message** | 채팅 메시지 | `{"event": "login", "userId": "123"}` |
-| **Partition** | 채팅방 내 스레드 | 메시지를 빠르게 처리하기 위한 분할 |
-| **Broker** | 카카오톡 서버 | Kafka 서버 |
+| 용어          | 카카오톡 비유      | MoreMoreMusic 예시                    |
+| ------------- | ------------------ | ------------------------------------- |
+| **Producer**  | 메시지 보내는 사람 | User Service (로그인 알림)            |
+| **Consumer**  | 메시지 읽는 사람   | Music Service (알림 받음)             |
+| **Topic**     | 그룹채팅방         | `user-events`, `music-events`         |
+| **Message**   | 채팅 메시지        | `{"event": "login", "userId": "123"}` |
+| **Partition** | 채팅방 내 스레드   | 메시지를 빠르게 처리하기 위한 분할    |
+| **Broker**    | 카카오톡 서버      | Kafka 서버                            |
 
 ## 🏗️ MoreMoreMusic 메시지 아키텍처
 
@@ -107,7 +107,7 @@
 
 #### 기본 설정 (config/kafka.js)
 ```javascript
-const { Kafka } = require('kafkajs');
+const { Kafka, logLevel } = require('kafkajs');
 
 // Kafka 클라이언트 설정
 const kafka = new Kafka({
@@ -121,7 +121,7 @@ const kafka = new Kafka({
   },
   
   // 로그 설정
-  logLevel: process.env.NODE_ENV === 'production' ? 'WARN' : 'INFO'
+  logLevel: process.env.NODE_ENV === 'production' ? logLevel.WARN : logLevel.INFO
 });
 
 module.exports = kafka;
@@ -241,11 +241,20 @@ const kafka = require('../config/kafka');
 class MusicEventProducer {
   constructor() {
     this.producer = kafka.producer();
+    this.isConnected = false;
+  }
+
+  async connect() {
+    if (!this.isConnected) {
+      await this.producer.connect();
+      this.isConnected = true;
+    }
   }
 
   // 음악 재생 시작 이벤트
   async sendPlayEvent(userId, songId, playlistId = null) {
     try {
+      await this.connect();
       const message = {
         event: 'song_play_started',
         userId: userId,
@@ -275,6 +284,8 @@ class MusicEventProducer {
   // 음악 재생 완료 이벤트
   async sendPlayCompleteEvent(userId, songId, actualDuration) {
     try {
+      await this.connect();
+
       const message = {
         event: 'song_play_completed',
         userId: userId,

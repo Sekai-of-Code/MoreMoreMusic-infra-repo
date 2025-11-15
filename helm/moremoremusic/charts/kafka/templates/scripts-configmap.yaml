@@ -137,7 +137,9 @@ data:
     replace_placeholder() {
       local placeholder="${1:?missing placeholder value}"
       local password="${2:?missing password value}"
-      sed -i "s/$placeholder/$password/g" "$KAFKA_CONFIG_FILE"
+      local result
+      result="$(sed "s|${placeholder}|${password}|g" "$KAFKA_CONFIG_FILE")"
+      echo "$result" > "$KAFKA_CONFIG_FILE"
     }
 
     append_file_to_kafka_conf() {
@@ -188,7 +190,7 @@ data:
       find /certs -name "xx*" -exec rm {} \;
       if [[ "${KAFKA_TLS_TYPE}" = "PEM" ]]; then
         # Copy PEM certificate and key
-        if [[ -f "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.crt" && "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.key" ]]; then
+        if [[ -f "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.crt" && -f "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.key" ]]; then
           cp "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.crt" /certs/tls.crt
           # Copy the PEM key ensuring the key used PEM format with PKCS#8
           openssl pkcs8 -topk8 -nocrypt -in "/mounted-certs/kafka-${POD_ROLE}-${POD_ID}.key" > /certs/tls.key
@@ -274,7 +276,7 @@ data:
       if [[ -f "$ZOOKEEPER_TRUSTSTORE" ]]; then
         cp "$ZOOKEEPER_TRUSTSTORE" "/certs/zookeeper.truststore.jks"
       else
-        error "Zookeeper keystore file not found"
+        error "Zookeeper truststore file not found"
       fi
       [[ -n "${KAFKA_ZOOKEEPER_TLS_KEYSTORE_PASSWORD:-}" ]] && kafka_conf_set "$KAFKA_CONFIG_FILE" "zookeeper.ssl.keystore.password" "${KAFKA_ZOOKEEPER_TLS_KEYSTORE_PASSWORD}"
       [[ -n "${KAFKA_ZOOKEEPER_TLS_TRUSTSTORE_PASSWORD:-}" ]] && kafka_conf_set "$KAFKA_CONFIG_FILE" "zookeeper.ssl.truststore.password" "${KAFKA_ZOOKEEPER_TLS_TRUSTSTORE_PASSWORD}"
@@ -370,4 +372,3 @@ data:
       append_file_to_kafka_conf /secret-config/server-secret.properties $KAFKA_CONFIG_FILE
     fi
     {{- include "common.tplvalues.render" ( dict "value" .Values.extraInit "context" $ ) | nindent 4 }}
-

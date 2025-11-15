@@ -46,13 +46,13 @@ echo "✅ 진단 완료!"
 
 ### 🚨 문제 유형별 빠른 체크
 
-| 증상 | 가능한 원인 | 빠른 확인 |
-|------|------------|----------|
-| Pod 계속 재시작 | 리소스 부족, 설정 오류 | `kubectl describe pod` |
-| 서비스 접근 불가 | 네트워크 정책, DNS 문제 | `kubectl get networkpolicy` |
-| Kafka 연결 실패 | 브로커 다운, 권한 문제 | `kafka-broker-api-versions` |
-| 메시지 처리 안됨 | Consumer 오류, 토픽 없음 | `kafka-topics --list` |
-| 느린 응답 속도 | 리소스 부족, 네트워크 지연 | `kubectl top pods` |
+| 증상             | 가능한 원인                | 빠른 확인                   |
+| ---------------- | -------------------------- | --------------------------- |
+| Pod 계속 재시작  | 리소스 부족, 설정 오류     | `kubectl describe pod`      |
+| 서비스 접근 불가 | 네트워크 정책, DNS 문제    | `kubectl get networkpolicy` |
+| Kafka 연결 실패  | 브로커 다운, 권한 문제     | `kafka-broker-api-versions` |
+| 메시지 처리 안됨 | Consumer 오류, 토픽 없음   | `kafka-topics --list`       |
+| 느린 응답 속도   | 리소스 부족, 네트워크 지연 | `kubectl top pods`          |
 
 ## 🚢 Kubernetes 관련 문제
 
@@ -464,7 +464,7 @@ kubectl logs -n moremoremusic-msa kafka-secure-xxxxx | grep -i error
 
 # 특정 시간대 로그
 kubectl logs -n moremoremusic-msa kafka-secure-xxxxx \
-  --since=2024-01-15T10:00:00Z --until=2024-01-15T11:00:00Z
+  --since-time=2024-01-15T10:00:00Z | head -n 1000
 ```
 
 #### 애플리케이션 로그 구조화

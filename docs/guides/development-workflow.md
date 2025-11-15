@@ -103,12 +103,12 @@ main (프로덕션)
 
 ### 브랜치 명명 규칙
 
-| 브랜치 타입 | 패턴 | 예시 | 설명 |
-|------------|------|------|------|
-| **Feature** | `feature/[이슈번호]-[기능명]` | `feature/123-user-login` | 새 기능 개발 |
-| **Bugfix** | `bugfix/[이슈번호]-[버그명]` | `bugfix/456-kafka-timeout` | 버그 수정 |
-| **Hotfix** | `hotfix/[이슈번호]-[수정내용]` | `hotfix/789-security-patch` | 긴급 수정 |
-| **Release** | `release/v[버전]` | `release/v1.2.0` | 릴리즈 준비 |
+| 브랜치 타입 | 패턴                           | 예시                        | 설명         |
+| ----------- | ------------------------------ | --------------------------- | ------------ |
+| **Feature** | `feature/[이슈번호]-[기능명]`  | `feature/123-user-login`    | 새 기능 개발 |
+| **Bugfix**  | `bugfix/[이슈번호]-[버그명]`   | `bugfix/456-kafka-timeout`  | 버그 수정    |
+| **Hotfix**  | `hotfix/[이슈번호]-[수정내용]` | `hotfix/789-security-patch` | 긴급 수정    |
+| **Release** | `release/v[버전]`              | `release/v1.2.0`            | 릴리즈 준비  |
 
 ### 브랜치 생성 및 관리
 
@@ -196,21 +196,22 @@ const request = require('supertest');
 const app = require('../../src/app');
 
 describe('사용자 로그인 통합 테스트', () => {
-  test('정상 로그인 시 Kafka 이벤트 발송', async (done) => {
+  test('정상 로그인 시 Kafka 이벤트 발송', async () => {
     // Kafka Consumer로 이벤트 수신 확인
     const consumer = kafka.consumer({ groupId: 'test-group' });
     await consumer.subscribe({ topic: 'user-events' });
     
-    let eventReceived = false;
-    consumer.run({
-      eachMessage: async ({ message }) => {
-        const event = JSON.parse(message.value.toString());
-        if (event.event === 'user_login') {
-          eventReceived = true;
-          done();
+    const eventPromise = new Promise((resolve) => {
+      consumer.run({
+        eachMessage: async ({ message }) => {
+          const event = JSON.parse(message.value.toString());
+          if (event.event === 'user_login') {
+            resolve(event);
+          }
         }
-      }
+      });
     });
+    await eventPromise;
 
     // 로그인 API 호출
     const response = await request(app)
@@ -223,11 +224,14 @@ describe('사용자 로그인 통합 테스트', () => {
     expect(response.status).toBe(200);
     expect(response.body.token).toBeDefined();
     
-    // 5초 후 이벤트 수신 확인
-    setTimeout(() => {
-      expect(eventReceived).toBe(true);
-      done();
-    }, 5000);
+    // 5초 이내 이벤트 수신 확인
+    const receivedEvent = await Promise.race([
+      eventPromise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      )
+    ]);
+    expect(receivedEvent.event).toBe('user_login');
   });
 });
 ```
@@ -244,15 +248,15 @@ describe('사용자 로그인 통합 테스트', () => {
 ```
 
 #### 타입별 이모지
-| 타입 | 이모지 | 설명 | 예시 |
-|------|--------|------|------|
-| **feat** | ✨ | 새 기능 추가 | `✨ feat: 사용자 로그인 API 구현` |
-| **fix** | 🐛 | 버그 수정 | `🐛 fix: Kafka 연결 타임아웃 해결` |
-| **docs** | 📝 | 문서 수정 | `📝 docs: API 문서 업데이트` |
-| **style** | 💄 | 코드 스타일 수정 | `💄 style: ESLint 규칙 적용` |
-| **refactor** | ♻️ | 리팩토링 | `♻️ refactor: 사용자 서비스 구조 개선` |
-| **test** | ✅ | 테스트 추가/수정 | `✅ test: 로그인 통합 테스트 추가` |
-| **chore** | 🔧 | 빌드/설정 변경 | `🔧 chore: Dockerfile 최적화` |
+| 타입         | 이모지 | 설명             | 예시                                  |
+| ------------ | ------ | ---------------- | ------------------------------------- |
+| **feat**     | ✨      | 새 기능 추가     | `✨ feat: 사용자 로그인 API 구현`      |
+| **fix**      | 🐛      | 버그 수정        | `🐛 fix: Kafka 연결 타임아웃 해결`     |
+| **docs**     | 📝      | 문서 수정        | `📝 docs: API 문서 업데이트`           |
+| **style**    | 💄      | 코드 스타일 수정 | `💄 style: ESLint 규칙 적용`           |
+| **refactor** | ♻️      | 리팩토링         | `♻️ refactor: 사용자 서비스 구조 개선` |
+| **test**     | ✅      | 테스트 추가/수정 | `✅ test: 로그인 통합 테스트 추가`     |
+| **chore**    | 🔧      | 빌드/설정 변경   | `🔧 chore: Dockerfile 최적화`          |
 
 #### 좋은 커밋 예시
 ```bash
@@ -377,7 +381,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       kafka:
-        image: confluentinc/cp-kafka:7.4.0
+        image: confluentinc/cp-kafka:8.1.0
         env:
           KAFKA_PROCESS_ROLES: broker,controller
           KAFKA_NODE_ID: 1
@@ -538,12 +542,12 @@ try {
 
 ### 1. Slack 채널 구성
 
-| 채널 | 용도 | 알림 레벨 |
-|------|------|----------|
-| **#moremoremusic-dev** | 개발 관련 전반 | 전체 |
-| **#moremoremusic-deploy** | 배포 알림 | 중요 |
-| **#moremoremusic-alerts** | 시스템 장애 | 즉시 |
-| **#moremoremusic-random** | 자유 토론 | 무음 |
+| 채널                      | 용도           | 알림 레벨 |
+| ------------------------- | -------------- | --------- |
+| **#moremoremusic-dev**    | 개발 관련 전반 | 전체      |
+| **#moremoremusic-deploy** | 배포 알림      | 중요      |
+| **#moremoremusic-alerts** | 시스템 장애    | 즉시      |
+| **#moremoremusic-random** | 자유 토론      | 무음      |
 
 ### 2. 일일 스탠드업 미팅
 
