@@ -6,7 +6,7 @@ APP VERSION: {{ .Chart.AppVersion }}
 -------------------------------------------------------------------------------
  WARNING
 
-    By specifying "serviceType=LoadBalancer" and not specifying "auth.enabled=true"
+    By specifying "service.type=LoadBalancer" and not specifying "auth.client.enabled=true"By specifying "serviceType=LoadBalancer" and not specifying "auth.enabled=true"
     you have most likely exposed the ZooKeeper service externally without any
     authentication mechanism.
 

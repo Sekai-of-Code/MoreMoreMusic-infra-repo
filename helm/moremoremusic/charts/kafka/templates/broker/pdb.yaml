@@ -19,8 +19,7 @@ metadata:
 spec:
   {{- if .Values.broker.pdb.minAvailable }}
   minAvailable: {{ .Values.broker.pdb.minAvailable }}
-  {{- end }}
-  {{- if .Values.broker.pdb.maxUnavailable }}
+  {{- else if .Values.broker.pdb.maxUnavailable }}
   maxUnavailable: {{ .Values.broker.pdb.maxUnavailable }}
   {{- end }}
   {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.broker.podLabels .Values.commonLabels ) "context" . ) }}

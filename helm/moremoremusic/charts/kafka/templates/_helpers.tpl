@@ -1161,7 +1161,7 @@ kafka: externalAccess.controller.service.loadBalancerNames or externalAccess.con
 {{- $loadBalancerNameListLength := len .Values.externalAccess.broker.service.loadBalancerNames -}}
 {{- $loadBalancerIPListLength := len .Values.externalAccess.broker.service.loadBalancerIPs -}}
 {{- $replicaCount := int .Values.broker.replicaCount }}
-{{- if and .Values.externalAccess.enabled (gt 0 $replicaCount) (eq .Values.externalAccess.broker.service.type "LoadBalancer") (not .Values.externalAccess.autoDiscovery.enabled) (eq $loadBalancerNameListLength 0) (eq $loadBalancerIPListLength 0) }}
+{{- if and .Values.externalAccess.enabled (gt $replicaCount 0) (eq .Values.externalAccess.broker.service.type "LoadBalancer") (not .Values.externalAccess.autoDiscovery.enabled) (eq $loadBalancerNameListLength 0) (eq $loadBalancerIPListLength 0) }}
 kafka: externalAccess.broker.service.loadBalancerNames or externalAccess.broker.service.loadBalancerIPs
     By specifying "externalAccess.enabled=true", "externalAccess.autoDiscovery.enabled=false" and
     "externalAccess.broker.service.type=LoadBalancer" at least one of externalAccess.broker.service.loadBalancerNames
@@ -1180,7 +1180,7 @@ kafka: externalAccess.service.{{ .element }}
 {{- end -}}
 {{- $replicaCount := int .context.Values.broker.replicaCount }}
 {{- $listLength := len (get .context.Values.externalAccess.broker.service .element) -}}
-{{- if and .context.Values.externalAccess.enabled (gt 0 $replicaCount) (not .context.Values.externalAccess.autoDiscovery.enabled) (eq .context.Values.externalAccess.broker.service.type "LoadBalancer") (gt $listLength 0) (not (eq $replicaCount $listLength)) }}
+{{- if and .context.Values.externalAccess.enabled (gt $replicaCount 0) (not .context.Values.externalAccess.autoDiscovery.enabled) (eq .context.Values.externalAccess.broker.service.type "LoadBalancer") (gt $listLength 0) (not (eq $replicaCount $listLength)) }}
 kafka: externalAccess.service.{{ .element }}
     Number of replicas and {{ .element }} array length must be the same. Currently: replicaCount = {{ $replicaCount }} and {{ .element }} = {{ $listLength }}
 {{- end -}}

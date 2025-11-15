@@ -84,8 +84,8 @@ spec:
       {{- if .Values.broker.priorityClassName }}
       priorityClassName: {{ .Values.broker.priorityClassName }}
       {{- end }}
-      {{- if .Values.controller.runtimeClassName }}
-      runtimeClassName: {{ .Values.controller.runtimeClassName }}
+      {{- if .Values.broker.runtimeClassName }}
+      runtimeClassName: {{ .Values.broker.runtimeClassName }}
       {{- end }}
       {{- if .Values.broker.podSecurityContext.enabled }}
       securityContext: {{- omit .Values.broker.podSecurityContext "enabled" | toYaml | nindent 8 }}
@@ -476,7 +476,7 @@ spec:
         resources:
           requests:
             storage: {{ .Values.broker.logPersistence.size | quote }}
-        {{- include "common.storage.class" (dict "persistence" .Values.broker.persistence "global" .Values.global) | nindent 8 }}
+        {{- include "common.storage.class" (dict "persistence" .Values.broker.logPersistence "global" .Values.global) | nindent 8 }}
         {{- if .Values.broker.logPersistence.selector }}
         selector: {{- include "common.tplvalues.render" (dict "value" .Values.broker.logPersistence.selector "context" $) | nindent 10 }}
         {{- end -}}

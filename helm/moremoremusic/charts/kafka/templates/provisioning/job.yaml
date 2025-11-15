@@ -168,11 +168,11 @@ spec:
               )
 
               echo "Starting provisioning"
-              for ((index=0; index < ${#kafka_provisioning_commands[@]}; index+={{ .Values.provisioning.parallel }}))
-              do
-                for j in $(seq ${index} $((${index}+{{ .Values.provisioning.parallel }}-1)))
-                do
-                    ${kafka_provisioning_commands[j]} & # Async command
+              total=${#kafka_provisioning_commands[@]}
+              step={{ .Values.provisioning.parallel }}
+              for ((index=0; index < total; index+=step)); do
+                for ((j=index; j<index+step && j<total; j++)); do
+                  ${kafka_provisioning_commands[j]} & # Async command
                 done
                 wait  # Wait the end of the jobs
               done
@@ -217,7 +217,7 @@ spec:
             {{- if (include "kafka.saslClientSecretsEnabled" .) }}
             - name: SASL_CLIENT_ID
               value: {{ .Values.sasl.interbroker.clientId | quote }}
-            - name: SASL_USER_PASSWORD
+            - name: SASL_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: {{ include "kafka.saslSecretName" . }}
