@@ -97,7 +97,7 @@ kubectl patch deployment -n moremoremusic-msa kafka-secure \
   -p '{"spec":{"template":{"spec":{"containers":[{"name":"kafka","resources":{"requests":{"memory":"256Mi","cpu":"100m"}}}]}}}}'
 ```
 
-**C. 설정 오류**
+#### C. 설정 오류
 ```bash
 # ConfigMap 확인
 kubectl get configmap -n moremoremusic-msa
@@ -129,7 +129,7 @@ kubectl exec -it test-pod -- nslookup kafka-service.moremoremusic-msa.svc.cluste
 
 #### 해결 방법
 
-**A. 네트워크 정책 문제**
+#### A. 네트워크 정책 문제
 ```bash
 # 올바른 라벨로 Pod 생성
 kubectl run test-pod \
@@ -138,7 +138,7 @@ kubectl run test-pod \
   nc -zv kafka-service.moremoremusic-msa.svc.cluster.local 9092
 ```
 
-**B. 서비스 셀렉터 문제**
+#### B. 서비스 셀렉터 문제
 ```bash
 # 서비스 설정 확인
 kubectl get svc kafka-service -n moremoremusic-msa -o yaml
@@ -194,7 +194,7 @@ kubectl logs -f -n moremoremusic-msa kafka-secure-xxxxx
 
 #### 해결 방법
 
-**A. 브로커 설정 문제**
+#### A. 브로커 설정 문제
 ```bash
 # KAFKA_ADVERTISED_LISTENERS 확인
 kubectl get deployment -n moremoremusic-msa kafka-secure -o yaml | \
@@ -205,7 +205,7 @@ kubectl patch deployment -n moremoremusic-msa kafka-secure \
   -p '{"spec":{"template":{"spec":{"containers":[{"name":"kafka","env":[{"name":"KAFKA_ADVERTISED_LISTENERS","value":"PLAINTEXT://kafka-service:9092"}]}]}}}}'
 ```
 
-**B. 네트워크 정책 차단**
+#### B. 네트워크 정책 차단
 ```bash
 # 애플리케이션 Pod에 올바른 라벨 추가 확인
 kubectl label pod your-app-pod app.kubernetes.io/part-of=moremoremusic --overwrite
@@ -232,7 +232,7 @@ kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
 
 #### 해결 방법
 
-**A. 토픽 생성**
+#### A. 토픽 생성
 ```bash
 # 필요한 토픽 생성
 kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
@@ -246,7 +246,7 @@ kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
   --entity-type topics --entity-name user-events --describe
 ```
 
-**B. 자동 토픽 생성 활성화**
+#### B. 자동 토픽 생성 활성화
 ```bash
 # Kafka 설정에서 auto.create.topics.enable=true 확인
 kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
@@ -277,7 +277,7 @@ kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
 
 #### 해결 방법
 
-**A. Consumer 오프셋 리셋**
+#### A. Consumer 오프셋 리셋
 ```bash
 # Consumer Group 오프셋 리셋 (주의: 메시지 재처리됨)
 kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
@@ -286,7 +286,7 @@ kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
   --to-earliest --topic user-events --execute
 ```
 
-**B. Dead Consumer 제거**
+#### B. Dead Consumer 제거
 ```bash
 # 비활성 Consumer 확인 및 제거
 kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
@@ -321,7 +321,7 @@ kubectl run debug-pod \
 
 #### 해결 방법
 
-**A. 올바른 라벨 추가**
+#### A. 올바른 라벨 추가
 ```yaml
 # Pod에 필요한 라벨 추가
 apiVersion: v1
@@ -332,7 +332,7 @@ metadata:
     tier: backend
 ```
 
-**B. NetworkPolicy 임시 비활성화 (디버깅용)**
+#### B. NetworkPolicy 임시 비활성화 (디버깅용)
 ```bash
 # 주의: 보안상 위험하므로 디버깅 용도로만 사용
 kubectl delete networkpolicy -n moremoremusic-msa --all
@@ -376,14 +376,14 @@ kubectl describe pod -n moremoremusic-msa kafka-secure-xxxxx | grep -A 10 Reques
 
 #### 해결 방법
 
-**A. 리소스 제한 조정**
+#### A. 리소스 제한 조정
 ```bash
 # Kafka Pod 리소스 늘리기
 kubectl patch deployment -n moremoremusic-msa kafka-secure \
   -p '{"spec":{"template":{"spec":{"containers":[{"name":"kafka","resources":{"requests":{"memory":"1Gi","cpu":"500m"},"limits":{"memory":"2Gi","cpu":"1"}}}]}}}}'
 ```
 
-**B. HPA 설정 (Horizontal Pod Autoscaler)**
+#### B. HPA 설정 (Horizontal Pod Autoscaler)
 ```yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -423,7 +423,7 @@ kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
 
 #### 해결 방법
 
-**A. Consumer 병렬 처리 증가**
+#### A. Consumer 병렬 처리 증가
 ```javascript
 // Consumer 설정 최적화
 const consumer = kafka.consumer({
@@ -442,7 +442,7 @@ for (let i = 0; i < 3; i++) {
 }
 ```
 
-**B. 파티션 수 증가**
+#### B. 파티션 수 증가
 ```bash
 # 토픽 파티션 추가 (주의: 줄일 수는 없음)
 kubectl exec -n moremoremusic-msa kafka-secure-xxxxx -- \
