@@ -78,7 +78,7 @@ kubectl get events -n moremoremusic-msa --sort-by=.metadata.creationTimestamp
 
 #### 해결 방법
 
-**A. 이미지 풀 실패**
+#### A. 이미지 풀 실패
 ```bash
 # 이미지 존재 확인
 docker pull confluentinc/cp-kafka:7.4.0
@@ -87,7 +87,7 @@ docker pull confluentinc/cp-kafka:7.4.0
 kubectl get deployment -n moremoremusic-msa kafka-secure -o yaml | grep image
 ```
 
-**B. 리소스 부족**
+#### B. 리소스 부족
 ```bash
 # 노드 리소스 확인
 kubectl top nodes
