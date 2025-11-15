@@ -1,0 +1,340 @@
+# MoreMoreMusic Helm Chart Values
+# Global configuration shared across all services
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+  
+# Application configuration
+app:
+  name: moremoremusic
+  namespace: moremoremusic
+  domain: moremoremusic.com
+  environment: production
+
+# Frontend service configuration
+frontend:
+  enabled: true
+  name: frontend
+  image:
+    repository: moremoremusic/frontend
+    tag: latest
+    pullPolicy: Always
+  
+  replicaCount: 3
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  
+  env:
+    REACT_APP_API_URL: "https://api.moremoremusic.com"
+
+# User service configuration
+userService:
+  enabled: true
+  name: user-service
+  image:
+    repository: moremoremusic/user-service
+    tag: latest
+    pullPolicy: Always
+  
+  replicaCount: 3
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "600m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  
+  env:
+    NODE_ENV: production
+    PORT: "3000"
+    SERVICE_NAME: user-service
+    KAFKA_BROKERS: "{{ .Release.Name }}-kafka:9092"
+    KAFKA_CLIENT_ID: user-service
+    KAFKA_CONSUMER_GROUP_ID: user-service-group
+
+# Music service configuration  
+musicService:
+  enabled: true
+  name: music-service
+  image:
+    repository: moremoremusic/music-service
+    tag: latest
+    pullPolicy: Always
+  
+  replicaCount: 3
+  
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "300m"
+    limits:
+      memory: "1Gi"
+      cpu: "800m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  env:
+    NODE_ENV: production
+    PORT: "3001"
+    SERVICE_NAME: music-service
+    KAFKA_BROKERS: "{{ .Release.Name }}-kafka:9092"
+    KAFKA_CLIENT_ID: music-service
+    KAFKA_CONSUMER_GROUP_ID: music-service-group
+  
+  storage:
+    tempVolume:
+      enabled: true
+      size: 1Gi
+
+# PostgreSQL database configuration
+postgresql:
+  enabled: true
+  auth:
+    enablePostgresUser: true
+    postgresPassword: ""  # Set via secret
+    username: moremoremusic
+    password: ""  # Set via secret
+    database: moremoremusic
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "ssd-storage"
+    
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    
+    configuration: |
+      max_connections = 200
+      shared_buffers = 256MB
+      effective_cache_size = 1GB
+      maintenance_work_mem = 64MB
+      checkpoint_completion_target = 0.9
+      wal_buffers = 16MB
+      default_statistics_target = 100
+      random_page_cost = 1.1
+      effective_io_concurrency = 200
+      work_mem = 4MB
+      min_wal_size = 1GB
+      max_wal_size = 4GB
+      max_worker_processes = 8
+      max_parallel_workers_per_gather = 4
+      max_parallel_workers = 8
+      max_parallel_maintenance_workers = 4
+
+# Redis cache configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""  # Set via secret
+  
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+# Apache Kafka configuration
+kafka:
+  enabled: true
+  
+  # Main broker configuration (ZooKeeper mode)
+  replicaCount: 3
+  persistence:
+    enabled: true
+    size: 20Gi
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "300m"
+    limits:
+      memory: "1Gi"
+      cpu: "800m"
+  
+  # Controller configuration (disable for ZooKeeper mode)
+  controller:
+    replicaCount: 0
+  
+  # Broker-only nodes (ZooKeeper mode brokers)
+  broker:
+    replicaCount: 3
+  
+  # Authentication
+  auth:
+    clientProtocol: plaintext
+    interBrokerProtocol: plaintext
+  
+  # Disable KRaft mode (use ZooKeeper instead)
+  kraft:
+    enabled: false
+  
+  # ZooKeeper configuration
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "400m"
+  
+  # Topics configuration
+  defaultReplicationFactor: 3
+  offsetsTopicReplicationFactor: 3
+  transactionStateLogReplicationFactor: 3
+  transactionStateLogMinIsr: 2
+  
+  # JVM heap settings
+  heapOpts: "-Xmx512m -Xms512m"
+  
+  # Kafka configuration overrides
+  config: |
+    num.network.threads=8
+    num.io.threads=8
+    socket.send.buffer.bytes=102400
+    socket.receive.buffer.bytes=102400
+    socket.request.max.bytes=104857600
+    num.partitions=6
+    num.recovery.threads.per.data.dir=2
+    offsets.topic.replication.factor=3
+    transaction.state.log.replication.factor=3
+    transaction.state.log.min.isr=2
+    log.retention.hours=168
+    log.segment.bytes=1073741824
+    log.retention.check.interval.ms=300000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  
+  hosts:
+    - host: moremoremusic.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+    - host: api.moremoremusic.com
+      paths:
+        - path: /api/user
+          pathType: Prefix
+          service: user-service
+          port: 3000
+        - path: /api/music
+          pathType: Prefix
+          service: music-service
+          port: 3001
+  
+  tls:
+    - secretName: moremoremusic-tls
+      hosts:
+        - moremoremusic.com
+        - api.moremoremusic.com
+
+# Secret management
+secrets:
+  postgresql:
+    username: moremoremusic
+    password: ""  # To be set via external secret management
+    postgresPassword: ""
+  
+  redis:
+    password: ""
+  
+  jwt:
+    secret: ""
+  
+  aws:
+    accessKeyId: ""
+    secretAccessKey: ""
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+  
+# Network policies
+networkPolicy:
+  enabled: true
+  
+# Pod disruption budgets
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Security context
+securityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001

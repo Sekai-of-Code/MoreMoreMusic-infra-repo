@@ -1,0 +1,34 @@
+apiVersion: v2
+name: moremoremusic
+description: MoreMoreMusic - Otaku-focused Music Streaming Platform Helm Chart
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/Sekai-of-Code/MoreMoreMusic
+sources:
+  - https://github.com/Sekai-of-Code/MoreMoreMusic-frontend-repo
+  - https://github.com/Sekai-of-Code/MoreMoreMusic-user-backend-repo
+  - https://github.com/Sekai-of-Code/MoreMoreMusic-music-backend-repo
+maintainers:
+  - name: SEKAI-OF-CODE
+    email: contact@sekai-of-code.com
+keywords:
+  - music
+  - streaming
+  - microservices
+  - otaku
+  - nestjs
+  - react
+dependencies:
+  - name: postgresql
+    version: "12.12.10"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "18.4.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: kafka
+    version: "26.8.5"
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled

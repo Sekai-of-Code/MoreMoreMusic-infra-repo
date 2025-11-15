@@ -1,53 +1,154 @@
-# MoreMoreMusic Infrastructure Repository
+# 🎵 MoreMoreMusic Infrastructure Repository
 
-Kubernetes infrastructure configurations for MoreMoreMusic MSA deployment.
+> 오타쿠 중심 음악 스트리밍 플랫폼의 완전한 인프라 구성 및 개발 가이드
 
-## 🏗️ Architecture Overview
+## 📋 목차
 
-### Microservices Architecture
-- **Frontend Service**: React SPA with TypeScript
-- **API Gateway**: NestJS-based routing and authentication
-- **User Service**: User management and authentication
-- **Music Service**: Music metadata and streaming
-- **Playlist Service**: Playlist management
-- **Search Service**: Music search and recommendations
-- **Notification Service**: Real-time notifications
+- [프로젝트 개요](#프로젝트-개요)
+- [빠른 시작](#빠른-시작)
+- [아키텍처 구조](#아키텍처-구조)
+- [문서 가이드](#문서-가이드)
+- [개발 환경 설정](#개발-환경-설정)
+- [배포 방법](#배포-방법)
+- [문제 해결](#문제-해결)
 
-### Infrastructure Components
-- **Ingress**: NGINX Ingress Controller with SSL/TLS
-- **Database**: PostgreSQL cluster with replication
-- **Cache**: Redis cluster for sessions and caching
-- **Monitoring**: Prometheus + Grafana stack
-- **Storage**: AWS S3 for media files
-- **Service Mesh**: Istio (optional)
+## 🎯 프로젝트 개요
 
-## 📁 Directory Structure
+**MoreMoreMusic**은 오타쿠 문화에 특화된 음악 스트리밍 플랫폼으로, 마이크로서비스 아키텍처(MSA)와 이벤트 드리븐 설계를 기반으로 구축되었습니다.
 
+### 🎮 주요 기능
+- **사용자 관리**: 회원가입, 로그인, 프로필 관리
+- **음악 스트리밍**: 고품질 음악 재생, 플레이리스트 관리
+- **추천 시스템**: AI 기반 개인화된 음악 추천
+- **소셜 기능**: 플레이리스트 공유, 커뮤니티 기능
+- **실시간 알림**: 이벤트 기반 실시간 사용자 알림
+
+### 🛠️ 기술 스택
+- **Frontend**: React 18, TypeScript, TailwindCSS
+- **Backend**: Node.js, NestJS, TypeScript
+- **Message Broker**: Apache Kafka (KRaft Mode)
+- **Database**: PostgreSQL 15, Redis 7
+- **Container**: Docker, Kubernetes
+- **Orchestration**: Helm 3
+- **CI/CD**: GitHub Actions
+
+## 🚀 빠른 시작
+
+### 전체 환경 설치 (5분 설치)
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/Sekai-of-Code/MoreMoreMusic-infra-repo.git
+cd MoreMoreMusic-infra-repo
+
+# 2. 개발 환경 자동 설정 (Docker Desktop + Kubernetes 필요)
+./scripts/quick-setup.sh
+
+# 3. 상태 확인
+kubectl get pods -n moremoremusic-msa
 ```
-k8s/
-├── namespaces.yaml              # Kubernetes namespaces
-├── frontend/
-│   └── deployment.yaml          # Frontend service deployment
-├── api-gateway/
-│   └── deployment.yaml          # API Gateway deployment
-├── services/
-│   ├── user-service.yaml        # User management service
-│   ├── music-service.yaml       # Music streaming service
-│   ├── playlist-service.yaml    # Playlist management
-│   ├── search-service.yaml      # Search functionality
-│   └── notification-service.yaml # Real-time notifications
-├── database/
-│   └── postgresql.yaml          # PostgreSQL cluster
-├── cache/
-│   └── redis.yaml               # Redis cache cluster
-├── ingress/
-│   └── ingress.yaml             # Ingress configuration
-├── secrets/
-│   └── secrets-template.yaml    # Secret templates
-└── monitoring/
-    ├── prometheus.yaml          # Prometheus monitoring
-    └── grafana.yaml             # Grafana dashboards
+
+### 수동 설정 (세부 제어)
+
+```bash
+# 1. 네임스페이스 및 보안 설정
+kubectl apply -f security.yaml
+
+# 2. Kafka 브로커 배포
+kubectl apply -f kafka.yaml
+
+# 3. 서비스 배포 (선택사항)
+kubectl apply -f services.yaml
+
+# 4. 상태 확인
+kubectl get all -n moremoremusic-msa
 ```
+
+## 🏗️ 아키텍처 구조
+
+### 전체 시스템 아키텍처
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MoreMoreMusic Platform                    │
+├─────────────────┬─────────────────┬─────────────────────────┤
+│   Frontend      │  User Service   │    Music Service        │
+│   (React App)   │   (NestJS)      │     (NestJS)           │
+└─────────┬───────┴─────────┬───────┴─────────┬───────────────┘
+          │                 │                 │
+          │         ┌───────▼─────────────────▼───────┐
+          │         │        Kafka Message Bus       │
+          │         │     (Event-Driven Comm)        │
+          │         └───────┬─────────────────────────┘
+          │                 │
+    ┌─────▼─────┐  ┌────────▼────────┐  ┌─────────────┐
+    │  Ingress  │  │   PostgreSQL    │  │    Redis    │
+    │ (nginx)   │  │ (Main Database) │  │   (Cache)   │
+    └───────────┘  └─────────────────┘  └─────────────┘
+```
+
+### 메시지 플로우
+```
+User Action (로그인) → User Service → Kafka Topic (user-events) 
+                                        ↓
+Music Service ← Kafka Consumer ← [이벤트 수신]
+     ↓
+개인화된 추천 음악 준비 → 사용자에게 표시
+```
+
+### 주요 컴포넌트
+
+| 컴포넌트 | 역할 | 포트 | 상태 |
+|----------|------|------|------|
+| **kafka-service** | 메시지 브로커 | 9092 | ✅ Running |
+| **user-service** | 사용자 관리 | 3000 | 🚧 개발 중 |
+| **music-service** | 음악 스트리밍 | 3001 | 🚧 개발 중 |
+| **frontend** | 웹 인터페이스 | 80 | 📋 계획됨 |
+
+## 📚 문서 가이드
+
+### 📂 문서 구조
+```
+docs/
+├── setup/                    # 환경 설정 가이드
+│   └── development-environment.md
+├── guides/                   # 개발 가이드
+│   ├── kafka-communication.md
+│   └── development-workflow.md
+└── troubleshooting/          # 문제 해결
+    └── debugging-guide.md
+```
+
+### 🎯 신규 팀원용 필수 문서
+1. **[개발환경 설정 가이드](./docs/setup/development-environment.md)**
+   - 시스템 요구사항부터 완전한 개발 환경 구축까지
+   - Kubernetes, Helm, Docker 설정
+   - 5분만에 따라할 수 있는 단계별 가이드
+
+2. **[Kafka 통신 완전 가이드](./docs/guides/kafka-communication.md)**
+   - Kafka 기초 개념부터 실전 구현까지
+   - Producer/Consumer 예제 코드
+   - 메시지 스키마 설계 및 성능 최적화
+
+### 🔧 개발 및 운영용 문서
+3. **[문제해결 및 디버깅 가이드](./docs/troubleshooting/debugging-guide.md)**
+   - 자주 발생하는 문제와 해결방법
+   - 5분 진단 체크리스트
+   - 응급상황 대응 절차
+
+4. **[개발 워크플로우 가이드](./docs/guides/development-workflow.md)**
+   - Git 브랜치 전략
+   - 코드 리뷰 가이드라인
+   - CI/CD 파이프라인
+
+### 📁 설정 파일 설명
+
+| 파일명 | 용도 | 설명 |
+|--------|------|------|
+| `kafka.yaml` | Kafka 브로커 | KRaft 모드 Kafka 단일 브로커 설정 |
+| `security.yaml` | 보안 설정 | NetworkPolicy, RBAC, ServiceAccount |
+| `services.yaml` | 서비스 관리 | Pod Disruption Budget 설정 |
+| `values-development.yaml` | 개발 환경 | 개발용 Helm 차트 값 |
+| `values-production.yaml` | 프로덕션 환경 | 프로덕션용 Helm 차트 값 |
 
 ## 🚀 Deployment Guide
 
