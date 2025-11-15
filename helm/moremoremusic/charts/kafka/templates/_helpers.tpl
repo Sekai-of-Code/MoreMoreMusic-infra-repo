@@ -1036,7 +1036,7 @@ Compile all warnings into a single message, and call fail.
 {{- $error := false -}}
 {{- range $listener := $listeners -}}
 {{- if not (has (upper $listener.protocol) $authProtocols) -}}
-{{- $error := true -}}
+{{- $error = true -}}
 {{- end -}}
 {{- end -}}
 {{- if $error -}}

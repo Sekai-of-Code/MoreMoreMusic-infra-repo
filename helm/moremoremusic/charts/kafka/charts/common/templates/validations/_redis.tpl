@@ -48,7 +48,7 @@ Usage:
   {{- if .subchart -}}
     {{- printf "%v" .context.Values.redis.enabled -}}
   {{- else -}}
-    {{- printf "%v" (not .context.Values.enabled) -}}
+    {{- printf "%v" .context.Values.enabled -}}
   {{- end -}}
 {{- end -}}
 
