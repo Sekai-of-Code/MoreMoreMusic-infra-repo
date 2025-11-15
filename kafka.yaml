@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: kafka
     app.kubernetes.io/component: broker
     app.kubernetes.io/part-of: moremoremusic
-    app.kubernetes.io/version: "7.4.0"
+    app.kubernetes.io/version: "8.1.0"
     app.kubernetes.io/managed-by: kubectl
 spec:
   type: ClusterIP
@@ -30,7 +30,7 @@ metadata:
     app.kubernetes.io/name: kafka
     app.kubernetes.io/component: broker
     app.kubernetes.io/part-of: moremoremusic
-    app.kubernetes.io/version: "7.4.0"
+    app.kubernetes.io/version: "8.1.0"
     app.kubernetes.io/managed-by: kubectl
 spec:
   replicas: 1
@@ -44,7 +44,7 @@ spec:
         app.kubernetes.io/name: kafka
         app.kubernetes.io/component: broker
         app.kubernetes.io/part-of: moremoremusic
-        app.kubernetes.io/version: "7.4.0"
+        app.kubernetes.io/version: "8.1.0"
     spec:
       serviceAccountName: kafka-service-account
       securityContext:
@@ -65,6 +65,7 @@ spec:
               mountPath: /var/kafka-logs
           securityContext:
             runAsUser: 0
+            allowPrivilegeEscalation: false
       containers:
         - name: kafka
           image: confluentinc/cp-kafka:8.1.0
